@@ -1,7 +1,7 @@
 {
-  "name": "",
+  "name": "mongodb-mock",
   "version": "0.0.0",
-  "description": "",
+  "description": "mock your mongodb",
   "main": "index.js",
   "files": [
     "LICENSE",
@@ -27,11 +27,11 @@
   },
   "homepage": "https://github.com/joaquimserafim/mongodb-mock",
   "devDependencies": {
-    "code": "^1.4.0",
+    "code": "^1.4.1",
     "jscs": "^1.13.1",
-    "jshint": "^2.7.0",
-    "lab": "^5.9.0",
-    "pre-commit": "^1.0.7"
+    "jshint": "^2.8.0",
+    "lab": "^5.10.0",
+    "pre-commit": "^1.0.10"
   },
   "pre-commit": [
     "jshint",
@@ -40,10 +40,19 @@
     "check-coverage"
   ],
   "dependencies": {
+    "is-js-object": "^1.0.0",
+    "js-object-pick": "^1.0.2",
+    "node-ramdisk": "^1.2.2",
+    "respawn": "^2.0.0",
     "snappy": "^3.2.0",
-    "snappy-stream": "^1.0.5"
+    "snappy-stream": "^1.0.5",
+    "verror": "^1.6.0"
   },
   "cpu": [
     "x64"
+  ],
+  "os": [
+    "darwin",
+    "linux"
   ]
 }

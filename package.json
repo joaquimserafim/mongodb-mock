@@ -1,12 +1,13 @@
 {
   "name": "mongodb-mock",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "mock your mongodb",
   "main": "index.js",
   "files": [
     "LICENSE",
     "README.md",
-    "index.js"
+    "index.js",
+    "versions"
   ],
   "scripts": {
     "test": "lab -m 5000 -v -c test.js",

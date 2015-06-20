@@ -3,7 +3,7 @@
 mock your mongodb
 
 #### the problem
->your infrastructure team don't wants to install or configure the CI/CD pipeline to have mongodb running with your tests and you end up to use a module that tries to implement all the operations implemented in mongodb but the module fails to deal advanced queries and the frustration starts...
+>your infrastructure team don't wants to install or configure the CI/CD pipeline to have mongodb running and you end up to use some module that tries to run all the operations implemented in mongodb but the module fails to deal with advanced queries and the frustration starts...
 
 #### OS supported
 * linux

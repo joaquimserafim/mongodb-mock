@@ -3,7 +3,6 @@
 var Lab     = require('lab')
 var Code    = require('code')
 var fs      = require('fs')
-var VError  = require('verror')
 
 var lab = module.exports.lab = Lab.script()
 

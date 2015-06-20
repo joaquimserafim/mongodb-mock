@@ -15,7 +15,7 @@ var inherits  = require('util').inherits
 //
 //
 
-module.exports = function (options) {
+module.exports = function mongoMock (options) {
   debug('options: %j', options)
   return new MongoMock(options)
 }

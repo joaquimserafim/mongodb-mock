@@ -3,7 +3,7 @@
 mock your mongodb
 
 #### the problem
->sometimes is tough to test complicated/advanced queries you're using in your app with a module that tries to implement all the operations implemented in mongodb and your infrastructure team don't wants to install or configure the CI/CD pipeline to have mongodb running with your tests
+>sometimes is tough to test complicated/advanced queries that you're using in your app with a module that tries to implement all the operations implemented in mongodb and your infrastructure team don't wants to install or configure the CI/CD pipeline to have mongodb running with your tests
 
 #### OS supported
 * linux

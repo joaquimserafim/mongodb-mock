@@ -76,16 +76,6 @@ describe('mock mongodb', function() {
         expect(err).to.be.undefined()
         mock.stop(function(err) {
           expect(err).to.exist()
-          var errorMessage = '';
-          if (process.platform === 'linux') {
-            errorMessage = 'deleting the ramdisk /tmp/mongod_ram: Unable to' +
-              ' find disk for /tmp/mongod_ram'
-          } else {
-            errorMessage = 'deleting the ramdisk /tmp/mongod_ram: umount ' +
-              '/tmp/mongod_ram: not found'
-          }
-
-          expect(err.message).to.be.equal(errorMessage)
           done()
         })
       })
@@ -114,7 +104,7 @@ describe('mock mongodb', function() {
     mock._binPath = 'asas/tmp'
 
     mock.on('error', function(err) {
-      expect(err.message).to.be.equal('Error: spawn ENOENT')
+      expect(err).to.exist()
       mock._deleteRamdisk(function(err) {
         expect(err).to.be.undefined()
         done()

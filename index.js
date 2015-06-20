@@ -11,10 +11,6 @@ var getProp   = require('get-property-value')
 var EE        = require('events').EventEmitter
 var inherits  = require('util').inherits
 
-//
-//
-//
-
 module.exports = function mongoMock (options) {
   debug('options: %j', options)
   return new MongoMock(options)

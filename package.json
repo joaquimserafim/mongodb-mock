@@ -1,6 +1,6 @@
 {
   "name": "mongodb-mock",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "mock your mongodb",
   "main": "index.js",
   "files": [
@@ -19,7 +19,11 @@
     "type": "git",
     "url": "https://github.com/joaquimserafim/mongodb-mock.git"
   },
-  "keywords": [],
+  "keywords": [
+    "mock",
+    "mongodb",
+    "util"
+  ],
   "author": "@joaquimserafim",
   "license": "ISC",
   "bugs": {

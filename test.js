@@ -76,9 +76,16 @@ describe('mock mongodb', function() {
         expect(err).to.be.undefined()
         mock.stop(function(err) {
           expect(err).to.exist()
-          expect(err.message)
-            .to.be.equal('deleting the ramdisk /tmp/mongod_ram: Unable to' +
-              ' find disk for /tmp/mongod_ram')
+          var errorMessage = '';
+          if (process.platform === 'linux') {
+            errorMessage = 'deleting the ramdisk /tmp/mongod_ram: Unable to' +
+              ' find disk for /tmp/mongod_ram'
+          } else {
+            errorMessage = 'deleting the ramdisk /tmp/mongod_ram: umount ' +
+              '/tmp/mongod_ram: not found'
+          }
+
+          expect(err.message).to.be.equal(errorMessage)
           done()
         })
       })

@@ -3,46 +3,54 @@
 var snappy    = require('snappy-stream')
 var fs        = require('fs')
 var ramdisk   = require('node-ramdisk')
-var pick      = require('js-object-pick')
 var isObject  = require('is-js-object')
 var VError    = require('verror')
 var respawn   = require('respawn')
+var debug     = require('debug')('mongodb-mock')
+var getProp   = require('get-property-value')
+var EE        = require('events').EventEmitter
+var inherits  = require('util').inherits
 
 //
 //
 //
 
 module.exports = function (options) {
+  debug('options: %j', options)
   return new MongoMock(options)
 }
 
 function MongoMock (options) {
+  EE.call(this)
+
   if (!isObject(options)) {
     options = {}
   }
 
   this._version = options.version || '2.6.10'
-  this._path    = __dirname + '/versions/'
-  this._file    = this._path + 'mongod-' + process.platform + '-x86_64-' +
+  this._path    = this._binPath = __dirname + '/versions/'
+  this._file    = __dirname + '/versions/mongod-' +
+    process.platform + '-x86_64-' +
     this._version + '.sz'
 
-  this._ramdiskOpts = pick(options, 'ramdisk')
-  this._ramdisk     = ramdisk(this._ramdiskOpts.name || 'mongod_ram')
-  this._ramdiskSize = this._ramdiskOpts.size || 100
+  this._ramdisk     = ramdisk(getProp(options, 'ramdisk.name') || 'mongod_ram')
+  this._ramdiskSize = getProp(options, 'ramdisk.size') || 100
 
   this._volume = ''
 
   return this
 }
 
+inherits(MongoMock, EE)
+
 //
-//
+// public method to start the mongodb mock
 //
 
 MongoMock.prototype.start = function start (cb) {
   var self = this
 
-  self._uncompress(self._file, self._path + 'mongod', uncompressTask)
+  uncompress(self._file, self._path + 'mongod', uncompressTask)
 
   function uncompressTask (err) {
     if (err) {
@@ -54,19 +62,52 @@ MongoMock.prototype.start = function start (cb) {
 }
 
 //
-//
+// public method to stop the mock
 //
 
 MongoMock.prototype.stop = function stop(cb) {
-  this._deleteRamdisk(this._volume, cb)
+  var self = this
+
+  self._mongod.stop(clean)
+
+  function clean () {
+    debug('run cleaning')
+    self._deleteRamdisk(cb)
+  }
 }
 
 //
+// start the child process with mongod
 //
+
+MongoMock.prototype._startMongod = function _startMongod (dbPath, cb) {
+  debug('spawn `mongod`')
+  var self = this
+
+  self._mongod = mongod(self._binPath, dbPath)
+  self._mongod.on('start', cb)
+  self._mongod.on('warn', onError)
+  self._mongod.on('stderr', onError)
+  self._mongod.start()
+
+  function onError (err) {
+    debug('spawn `mongod`: %s', err)
+    self.emit(
+      'error',
+      new VError(err.toString(), 'starting mongod on %s cdw', self._binPath)
+    )
+  }
+}
+
+//
+// create a ramdisk for mongod
 //
 
 MongoMock.prototype._createRamdisk = function _createRamdisk (cb) {
+  debug('create ramdisk')
+
   var self = this
+
   self._ramdisk.create(this._ramdiskSize, createCb)
 
   function createCb (err, mount) {
@@ -80,51 +121,41 @@ MongoMock.prototype._createRamdisk = function _createRamdisk (cb) {
 }
 
 //
-//
-//
-
-MongoMock.prototype._startMongod = function _startMongod (dbPath, cb) {
-  this._mongod = mongod(this._path, dbPath)
-  this._mongod.on('start', cb)
-  this._mongod.on('warn', onError)
-  this._mongod.on('stderr', onError)
-  this._mongod.start()
-
-  function onError (err) {
-    cb(new VError(err.toString(), 'starting mongod on %s cdw', dbPath))
-  }
-}
-
-//
-//
+// delete the ramdisk was created to run mongod
 //
 
-MongoMock.prototype._deleteRamdisk = function _deleteRamdisk (volumePoint, cb) {
+MongoMock.prototype._deleteRamdisk = function _deleteRamdisk (cb) {
+  debug('delete ramdisk')
+
   var self = this
 
-  self._mongod.stop(deleteVolume)
+  self._ramdisk.delete(self._volume, deleteCb)
 
-  function deleteVolume () {
-    self._ramdisk.delete(volumePoint, deleteCb)
-
-    function deleteCb (err) {
-      if (err) {
-        cb(new VError(err, 'deleting the ramdisk %s', volumePoint))
-      } else {
-        self._deleteFile(cb)
-      }
+  function deleteCb (err) {
+    if (err) {
+      cb(new VError(err, 'deleting the ramdisk %s', self._volume))
+    } else {
+      deleteFile(self._path, cb)
     }
   }
 }
 
-MongoMock.prototype._deleteFile = function _deleteFile (cb) {
-  var self = this
+//
+// Help functions
+//
 
-  fs.unlink(self._path + 'mongod', unlinkCb)
+//
+// delete mongod file
+//
+
+function deleteFile (path, cb) {
+  debug('delete `mongod` file')
+
+  fs.unlink(path + 'mongod', unlinkCb)
 
   function unlinkCb (err) {
     if (err) {
-      cb(new VError(err, 'deleting file %s', self._path + 'mongod'))
+      cb(new VError(err, 'deleting file %s', path + 'mongod'))
     } else {
       cb()
     }
@@ -132,16 +163,18 @@ MongoMock.prototype._deleteFile = function _deleteFile (cb) {
 }
 
 //
-// uncompress the mongod bin file
+// uncompress the mongod binary file
 //
 
-MongoMock.prototype._uncompress = function _uncompress (rFile, wFile, cb) {
+function uncompress (readFile, writeFile, cb) {
+  debug('uncompress file: %s, %s', readFile, writeFile)
+
   var uncompressStream = snappy.createUncompressStream()
   uncompressStream.on('error', errorCb)
 
   // create the write stream for the uncompress file
   var uncompressFile = fs.createWriteStream(
-    wFile,
+    writeFile,
     {
       flags: 'w',
       mode : '750'
@@ -150,28 +183,30 @@ MongoMock.prototype._uncompress = function _uncompress (rFile, wFile, cb) {
   uncompressFile.on('error', errorCb)
 
   // readable stream
-  var read = fs.createReadStream(rFile)
+  var read = fs.createReadStream(readFile)
   read.on('end', cb)
   read.on('error', errorCb)
 
-  // process streams
   read.pipe(uncompressStream).pipe(uncompressFile)
 
   function errorCb (err) {
+    debug('uncompress file: %s', err)
     cb(new VError(
       err,
       'uncompress %s mongodb file into %s',
-      rFile,
-      wFile
+      readFile,
+      writeFile
     ))
   }
 }
 
 //
-//
+// spawn mongod binary
 //
 
 function mongod (binPath, DbPath) {
+  debug('mongod process: %s, %s', binPath, DbPath)
+
   return respawn(
     [
       'mongod',
